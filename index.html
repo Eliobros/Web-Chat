@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Cadastro || Tina-Chat </title>
+    <link rel="icon" href="tina-logo.jpg" type="image/x-icon">
+    <meta name="description" content="Converse com Tina, nossa IA avançada da Eliobros Tech. Obtenha respostas rápidas e precisas em um chat interativo, desenvolvido para proporcionar uma experiência única.">
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+    <div class="container">
+        <div class="Form login-form">
+        <h2>Entrar</h2>
+        <form id="loginForm" action="#">
+            <div class="input-box">
+                <i class='bx bxs-envelope'></i>
+                <label for="#">Email</label>
+                <input type="email" required placeholder="Email" id="email">
+               
+               
+            </div>
+            <div class="input-box">
+                <i class='bx bxs-lock' ></i>
+                <input type="password" placeholder="Sua senha" id="password">
+                <label for="#">Senha</label>
+              
+            </div>
+            <div class="forgot-section">
+                <span><input type="checkbox" name="" id="checked">Lembrar Me</span>
+                <span><a href="#" onclick="forgotPassword()">Esqueceu-se da senha?</a></span>
+            </div>
+            <button class="btn">Login</button>
+        </form>
+        <p>Ou entre usando</p>
+        <div class="social-media">
+            <i class='bx bxl-facebook'></i>
+            <i id="googleBtnLogin" class='bx bxl-google'></i>
+            <i class='bx bxl-twitter'></i>
+        </div>
+        <p class="RegisteBtn RegiBtn">Nao tem conta?<a href="#">Crie sua conta</a></p>
+    </div>
+    <div class="Form Register-form">
+        <h2>Cadastro</h2>
+        <form action="#" id="registerForm">
+            
+            <div class="input-box">
+                <i class='bx bxs-user'></i>
+                <label for="#">Nome do usuário</label>
+                <input type="text" placeholder="Digite seu nome de usuario" id="usernameReg">
+               
+               
+            </div>
+            
+            <div class="input-box">
+                <i class='bx bxs-envelope'></i>
+                <label for="#">Email</label>
+                <input type="emailReg" placeholder="Digite seu email" id="emailReg">
+               
+               
+            </div>
+            <div class="input-box">
+                <i class='bx bxs-lock' ></i>
+                <input type="password" placeholder="********" id="passwordReg">
+                <label for="#">Senha</label>
+            </div>
+            <div class="input-box">
+                <i class='bx bxs-lock' ></i>
+                <input type="password" placeholder="********" id="confirmPassword">
+                <label for="#">Confirmar a senha</label>
+            </div>
+            <div class="forgot-section">
+                <span><input type="checkbox" name="" id="checked">Lembrar Me</span>
+                <span><a href="#">Esqueceu a senha ?</a></span>
+            </div>
+            <button class="btn" class="loginBtn" id="registerBtn">Cadastrar</button>
+        </form>
+        <p>Ou Cadastre-se usando</p>
+        <div class="social-media">
+            <i class='bx bxl-facebook'></i>
+            <i id="googleBtnRegister" class="bx bxl-google"></i>
+            <i class='bx bxl-twitter'></i>
+        </div>
+        <p class="LoginBtn">Ja tem conta?<a href="#">Entrar aqui</a></p>
+    </div>
+</div>
+<script>
+    const container=document.querySelector(".container") ;
+    const loginForm=document.querySelector('.login-form')
+    const RegisterForm=document.querySelector('.Register-form');
+    const RegiBtn=document.querySelector('.RegiBtn');
+    const LoginBtn=document.querySelector('.LoginBtn');
+    RegiBtn.addEventListener('click',()=>{
+        RegisterForm.classList.add('active');
+        loginForm.classList.add('active')
+    })
+    LoginBtn.addEventListener('click',()=>{
+        RegisterForm.classList.remove('active');
+        loginForm.classList.remove('active')
+    })
+</script>
+<script type="module" src="login.js"></script>
+</body>
+</html>
