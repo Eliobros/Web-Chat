@@ -1,7 +1,20 @@
 // Configuração do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+import { 
+    getAuth, 
+    onAuthStateChanged, 
+    setPersistence, 
+    browserLocalPersistence, 
+    signInWithEmailAndPassword 
+} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
+import { 
+    getFirestore, 
+    collection, 
+    doc, 
+    getDocs, 
+    setDoc, 
+    addDoc 
+} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
 // Inicializar Firebase
 const firebaseConfig = {
@@ -18,165 +31,104 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Configurar a persistência da sessão
+// Configura persistência da sessão
 setPersistence(auth, browserLocalPersistence)
-    .then(() => {
-        console.log('Sessão mantida no navegador.');
-    })
-    .catch((error) => {
-        console.error('Erro ao manter a sessão:', error);
-    });
+    .then(() => console.log("Persistência configurada."))
+    .catch((error) => console.error("Erro ao configurar persistência:", error));
 
-// Variáveis globais
-const API_KEY = 'app-hWyXMuzlYLsodBKfZH5BhXR6'; // Chave da API Dify
-const DIFY_API_URL = 'https://api.dify.ai/v1/chat-messages';
-const sendButton = document.getElementById('sendButton');
-const messageInput = document.getElementById('message-input');
-const chatBox = document.getElementById('chat-box');
-
-// Função para recuperar o UID da URL
+// Função para pegar o UID da URL
 function getUIDFromURL() {
     const params = new URLSearchParams(window.location.search);
     const uid = params.get('uid');
-    if (!uid) {
-        console.error("UID não encontrado na URL.");
-        alert("UID ausente na URL. Faça login novamente.");
-        window.location.href = 'index.html'; // Redireciona para login
-    }
+    console.log("UID recuperado da URL:", uid);
     return uid;
 }
 
-// Função para verificar se o usuário está logado
-onAuthStateChanged(auth, async (user) => {
-    const uidFromURL = getUIDFromURL(); // Recupera o UID da URL
+// Validação de autenticação na página do chat
+onAuthStateChanged(auth, (user) => {
+    const uidFromURL = getUIDFromURL();
 
-    if (!user) {
-        console.error("Usuário não autenticado. Redirecionando...");
-        alert("Usuário não autenticado. Faça login novamente.");
-        window.location.href = 'index.html'; // Redireciona para login
-    } else {
+    if (user && user.uid === uidFromURL) {
         console.log("Usuário autenticado:", user.uid);
-
-        // Verifica se o UID da URL corresponde ao UID do usuário autenticado
-        if (user.uid !== uidFromURL) {
-            console.error("UID não corresponde ao usuário autenticado.");
-            alert("UID inválido ou não corresponde. Faça login novamente.");
-            window.location.href = 'index.html'; // Redireciona para login
-        } else {
-            console.log("UID válido. Carregando mensagens...");
-            await carregarMensagens(); // Carregar mensagens se tudo estiver certo
-        }
+        carregarMensagens();
+    } else {
+        console.error("Usuário não autenticado ou UID inválido.");
+        alert("Por favor, faça login.");
+        window.location.href = "index.html";
     }
 });
 
-// Função para salvar a mensagem no Firestore
+// Função para carregar mensagens do Firestore
+async function carregarMensagens() {
+    const user = auth.currentUser;
+
+    if (user) {
+        const userId = user.uid;
+        console.log("Carregando mensagens para o usuário:", userId);
+
+        try {
+            const messagesSnapshot = await getDocs(collection(doc(db, 'messages', userId), 'chat'));
+
+            if (messagesSnapshot.empty) {
+                console.log("Sem mensagens para este usuário.");
+                appendMessage('system', 'Nenhuma mensagem encontrada. Envie a primeira mensagem!', 'Agora');
+            } else {
+                messagesSnapshot.forEach(doc => {
+                    const message = doc.data();
+                    appendMessage(message.sender, message.message, message.time);
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao carregar mensagens:", error);
+        }
+    } else {
+        console.error("Usuário não autenticado.");
+    }
+}
+
+// Função para salvar mensagem no Firestore
 async function salvarMensagem(sender, messageText, time) {
     const user = auth.currentUser;
+
     if (user) {
         const userId = user.uid;
 
-        // Cria a coleção se não existir
-        const messagesRef = doc(db, 'messages', userId);
-        const userRef = doc(db, 'users', userId);
+        try {
+            const messagesRef = doc(db, 'messages', userId);
 
-        await setDoc(messagesRef, {}, { merge: true });
-        await setDoc(userRef, { userId: userId }, { merge: true });
-
-        // Adiciona a nova mensagem
-        await addDoc(collection(messagesRef, 'chat'), {
-            sender,
-            message: messageText,
-            time,
-        });
-    }
-}
-
-// Função para carregar as mensagens do Firestore
-async function carregarMensagens() {
-    const user = auth.currentUser;  // Verifique se o usuário está logado
-    if (user) {
-        const userId = user.uid;  // Pega o uid do usuário logado
-        console.log("Carregando mensagens do usuário:", userId);
-        
-        const messagesSnapshot = await getDocs(collection(doc(db, 'messages', userId), 'chat'));
-
-        // Verifica se existem mensagens
-        if (messagesSnapshot.empty) {
-            console.log("Sem mensagens para este usuário.");
-            appendMessage('system', 'Nenhuma mensagem encontrada. Seja o primeiro a enviar uma mensagem!', 'Agora');
-        } else {
-            messagesSnapshot.forEach(doc => {
-                const message = doc.data();
-                appendMessage(message.sender, message.message, message.time);
+            await setDoc(messagesRef, {}, { merge: true });
+            await addDoc(collection(messagesRef, 'chat'), {
+                sender,
+                message: messageText,
+                time,
             });
+        } catch (error) {
+            console.error("Erro ao salvar mensagem:", error);
         }
-    } else {
-        console.log("Nenhum usuário autenticado.");
     }
 }
 
-// Função para enviar mensagem ao clicar no botão ou pressionando Enter
-sendButton.addEventListener('click', async () => {
-    const userMessage = messageInput.value.trim();
-    if (userMessage) {
-        const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+// Função para enviar mensagem
+async function sendMessage(userMessage) {
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        appendMessage('user', userMessage, currentTime);
-        salvarMensagem('user', userMessage, currentTime);
+    appendMessage('user', userMessage, currentTime);
+    salvarMensagem('user', userMessage, currentTime);
 
-        messageInput.value = ''; // Limpa o campo de entrada
-
-        const response = await sendMessageToAPI(userMessage);
-
-        if (response) {
-            const botMessage = response.answer || 'Desculpe, não consegui entender sua pergunta.';
-            appendMessage('bot', botMessage, currentTime);
-            salvarMensagem('bot', botMessage, currentTime);
-        } else {
-            appendMessage('bot', 'Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.', currentTime);
-            salvarMensagem('bot', 'Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.', currentTime);
-        }
-    }
-});
-
-// Função para enviar mensagem para a API
-async function sendMessageToAPI(userMessage) {
     try {
-        const data = {
-            query: userMessage,
-            inputs: {},
-            response_mode: "blocking",
-            user: "12345",
-            conversation_id: "",
-            files: []
-        };
-
-        const headers = {
-            "Authorization": `Bearer ${API_KEY}`,
-            "Content-Type": "application/json"
-        };
-
-        const response = await fetch(DIFY_API_URL, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(data)
-        });
-
-        if (response.ok) {
-            const responseData = await response.json();
-            return responseData;
-        } else {
-            console.error('Erro na resposta da API');
-            return null;
-        }
+        const response = await sendMessageToAPI(userMessage);
+        const botMessage = response.answer || "Desculpe, não consegui entender sua pergunta.";
+        appendMessage('bot', botMessage, currentTime);
+        salvarMensagem('bot', botMessage, currentTime);
     } catch (error) {
-        console.error('Erro ao chamar a API:', error);
-        return null;
+        console.error("Erro ao processar mensagem:", error);
+        appendMessage('bot', "Erro ao processar sua solicitação. Tente novamente mais tarde.", currentTime);
     }
 }
 
-// Função para exibir mensagens no chat
+// Função para exibir mensagem no chat
 function appendMessage(sender, messageText, time) {
+    const chatBox = document.getElementById('chat-box');
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('message', sender);
 
@@ -192,17 +144,54 @@ function appendMessage(sender, messageText, time) {
     messageContainer.appendChild(messageBubble);
 
     chatBox.appendChild(messageContainer);
-    scrollToBottom();
+    chatBox.scrollTop = chatBox.scrollHeight; // Rola para o final do chat
 }
 
-// Função para rolar o chat até o final
-function scrollToBottom() {
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
+// Enviar mensagem ao pressionar Enter ou clicar no botão
+document.getElementById('sendButton').addEventListener('click', () => {
+    const messageInput = document.getElementById('message-input');
+    const userMessage = messageInput.value.trim();
 
-// Função para enviar mensagem ao pressionar Enter
-messageInput.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter') {
-        sendButton.click();
+    if (userMessage) {
+        sendMessage(userMessage);
+        messageInput.value = ''; // Limpa o campo de entrada
     }
 });
+
+document.getElementById('message-input').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        document.getElementById('sendButton').click();
+    }
+});
+
+// Função para enviar mensagem para a API
+async function sendMessageToAPI(userMessage) {
+    const API_KEY = "app-hWyXMuzlYLsodBKfZH5BhXR6"; // Substitua pela chave da sua API
+    const DIFY_API_URL = "https://api.dify.ai/v1/chat-messages";
+
+    const data = {
+        query: userMessage,
+        inputs: {},
+        response_mode: "blocking",
+        user: "12345",
+        conversation_id: "",
+        files: []
+    };
+
+    const headers = {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+    };
+
+    const response = await fetch(DIFY_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+    });
+
+    if (response.ok) {
+        return response.json();
+    } else {
+        throw new Error("Erro na API");
+    }
+}
