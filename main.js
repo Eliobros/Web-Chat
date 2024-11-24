@@ -70,9 +70,11 @@ async function salvarMensagem(sender, messageText, time) {
 
 // Função para carregar as mensagens do Firestore
 async function carregarMensagens() {
-    const user = auth.currentUser;
+    const user = auth.currentUser;  // Verifique se o usuário está logado
     if (user) {
-        const userId = user.uid;
+        const userId = user.uid;  // Pega o uid do usuário logado
+        console.log("Carregando mensagens do usuário:", userId);
+        
         const messagesSnapshot = await getDocs(collection(doc(db, 'messages', userId), 'chat'));
 
         // Verifica se existem mensagens
