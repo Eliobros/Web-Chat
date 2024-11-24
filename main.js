@@ -34,11 +34,18 @@ const sendButton = document.getElementById('sendButton');
 const messageInput = document.getElementById('message-input');
 const chatBox = document.getElementById('chat-box');
 
+// Função para recuperar o UID da URL
+function getUIDFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('uid');
+}
+
 // Função para verificar se o usuário está logado
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        console.log("Usuário não autenticado. Redirecionando...");
-        alert("UID não encontrado, por favor faça login.");
+    const uidFromURL = getUIDFromURL();
+    if (!user || user.uid !== uidFromURL) {
+        console.log("Usuário não autenticado ou UID não corresponde. Redirecionando...");
+        alert("UID não encontrado ou inválido, por favor faça login.");
         window.location.href = 'index.html'; // Redireciona para login
     } else {
         console.log("Usuário autenticado:", user);
