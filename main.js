@@ -20,43 +20,44 @@ const db = getFirestore(app);
 
 // Configurar persistência
 setPersistence(auth, browserLocalPersistence)
-    .then(() => console.log("Persistência configurada com sucesso."))
-    .catch((error) => console.error("Erro ao configurar persistência:", error));
+    .then(() => {
+        console.log("Persistência configurada com sucesso.");
+        // Aguardar o estado de autenticação
+        checkAuthState();
+    })
+    .catch((error) => {
+        console.error("Erro ao configurar persistência:", error);
+    });
 
-// Variáveis globais
-const API_KEY = 'app-hWyXMuzlYLsodBKfZH5BhXR6';
-const DIFY_API_URL = 'https://api.dify.ai/v1/chat-messages';
-const sendButton = document.getElementById('sendButton');
-const messageInput = document.getElementById('message-input');
-const chatBox = document.getElementById('chat-box');
+// Função para verificar o estado de autenticação
+function checkAuthState() {
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const uidFromURL = getUIDFromURL();
+            console.log("Usuário autenticado:", user.uid);
+            console.log("UID da URL:", uidFromURL);
+
+            if (user.uid === uidFromURL) {
+                console.log("UID corresponde, carregando mensagens...");
+                carregarMensagens();
+            } else {
+                console.error("UID da URL não corresponde ao UID autenticado.");
+                alert("UID inválido. Faça login novamente.");
+                window.location.href = "index.html";
+            }
+        } else {
+            console.error("Usuário não autenticado. Faça login novamente.");
+            alert("Por favor, faça login.");
+            window.location.href = "index.html";
+        }
+    });
+}
 
 // Função para recuperar o UID da URL
 function getUIDFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('uid');
 }
-
-// Função para verificar autenticação
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        const uidFromURL = getUIDFromURL();
-        console.log("Usuário autenticado:", user.uid);
-        console.log("UID da URL:", uidFromURL);
-
-        if (user.uid === uidFromURL) {
-            console.log("UID corresponde, carregando mensagens...");
-            carregarMensagens();
-        } else {
-            console.error("UID da URL não corresponde ao UID autenticado.");
-            alert("UID inválido. Faça login novamente.");
-            window.location.href = "index.html";
-        }
-    } else {
-        console.error("Usuário não autenticado. Faça login novamente.");
-        alert("Por favor, faça login.");
-        window.location.href = "index.html";
-    }
-});
 
 // Função para salvar mensagens no Firestore
 async function salvarMensagem(sender, messageText, time) {
