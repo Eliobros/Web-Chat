@@ -42,6 +42,8 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
             return;
         }
 
+        const uid = user.uid; // Recupera o UID do usuário autenticado
+
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", email));
         const querySnapshot = await getDocs(q);
@@ -51,7 +53,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         } else {
             querySnapshot.forEach((doc) => {
                 console.log("Usuário encontrado:", doc.data());
-                window.location.href = "chat.html"; // Redireciona para o chat
+
+                // Redireciona para o chat com o UID na URL
+                window.location.href = `chat.html?uid=${uid}`;
             });
         }
     } catch (error) {
@@ -88,8 +92,10 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
             password: password
         });
 
+        const uid = user.uid; // Recupera o UID do usuário registrado
+
         alert("Usuário registrado com sucesso!");
-        window.location.href = "chat.html"; // Redireciona para o chat após registro
+        window.location.href = `chat.html?uid=${uid}`; // Redireciona para o chat após registro
     } catch (error) {
         console.error("Erro ao criar conta:", error);
         alert('Erro ao criar conta. Tente novamente mais tarde.');
@@ -108,6 +114,8 @@ document.getElementById("googleBtnLogin").addEventListener("click", async (e) =>
             return;
         }
 
+        const uid = user.uid; // Recupera o UID do usuário autenticado
+
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
@@ -120,7 +128,8 @@ document.getElementById("googleBtnLogin").addEventListener("click", async (e) =>
             });
         }
 
-        window.location.href = "chat.html";
+        // Redireciona para o chat com o UID na URL
+        window.location.href = `chat.html?uid=${uid}`;
     } catch (error) {
         console.error("Erro ao fazer login com Google:", error);
         alert("Erro ao fazer login com Google.");
@@ -139,6 +148,8 @@ document.getElementById("googleBtnRegister").addEventListener("click", async (e)
             return;
         }
 
+        const uid = user.uid; // Recupera o UID do usuário autenticado
+
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
@@ -150,10 +161,10 @@ document.getElementById("googleBtnRegister").addEventListener("click", async (e)
             });
 
             alert("Usuário registrado com sucesso com Google!");
-            window.location.href = "chat.html";
-        } else {
-            alert("Usuário já cadastrado com esse e-mail!");
         }
+
+        // Redireciona para o chat com o UID na URL
+        window.location.href = `chat.html?uid=${uid}`;
     } catch (error) {
         console.error("Erro ao criar conta com Google:", error);
         alert("Erro ao criar conta com Google.");
