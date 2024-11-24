@@ -37,19 +37,35 @@ const chatBox = document.getElementById('chat-box');
 // Função para recuperar o UID da URL
 function getUIDFromURL() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('uid');
+    const uid = params.get('uid');
+    if (!uid) {
+        console.error("UID não encontrado na URL.");
+        alert("UID ausente na URL. Faça login novamente.");
+        window.location.href = 'index.html'; // Redireciona para login
+    }
+    return uid;
 }
 
 // Função para verificar se o usuário está logado
-onAuthStateChanged(auth, (user) => {
-    const uidFromURL = getUIDFromURL();
-    if (!user || user.uid !== uidFromURL) {
-        console.log("Usuário não autenticado ou UID não corresponde. Redirecionando...");
-        alert("UID não encontrado ou inválido, por favor faça login.");
+onAuthStateChanged(auth, async (user) => {
+    const uidFromURL = getUIDFromURL(); // Recupera o UID da URL
+
+    if (!user) {
+        console.error("Usuário não autenticado. Redirecionando...");
+        alert("Usuário não autenticado. Faça login novamente.");
         window.location.href = 'index.html'; // Redireciona para login
     } else {
-        console.log("Usuário autenticado:", user);
-        carregarMensagens(); // Carregar mensagens quando o usuário estiver logado
+        console.log("Usuário autenticado:", user.uid);
+
+        // Verifica se o UID da URL corresponde ao UID do usuário autenticado
+        if (user.uid !== uidFromURL) {
+            console.error("UID não corresponde ao usuário autenticado.");
+            alert("UID inválido ou não corresponde. Faça login novamente.");
+            window.location.href = 'index.html'; // Redireciona para login
+        } else {
+            console.log("UID válido. Carregando mensagens...");
+            await carregarMensagens(); // Carregar mensagens se tudo estiver certo
+        }
     }
 });
 
