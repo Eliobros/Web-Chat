@@ -1,9 +1,14 @@
-import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
-
 // Importando os módulos do Firebase
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
 import { getFirestore, collection, query, where, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    sendEmailVerification 
+} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -17,7 +22,7 @@ const firebaseConfig = {
 };
 
 // Inicializando o Firebase
-const app = initializeApp(firebaseConfig); 
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -30,6 +35,12 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+
+        // Verifica se o e-mail foi verificado
+        if (!user.emailVerified) {
+            alert("E-mail não verificado. Por favor, verifique sua conta antes de fazer login.");
+            return;
+        }
 
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", email));
@@ -45,7 +56,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         }
     } catch (error) {
         console.error("Erro ao fazer login:", error);
-        alert('Erro ao fazer login. Verifique seu email e senha.');
+        alert('Erro ao fazer login. Verifique seu e-mail e senha.');
     }
 });
 
@@ -66,9 +77,13 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // Enviando e-mail de verificação
+        await sendEmailVerification(user);
+        alert("E-mail de verificação enviado. Verifique sua caixa de entrada.");
+
         // Adicionando o usuário ao Firestore
         await addDoc(collection(db, "users"), {
-            username: username, // Incluído
+            username: username,
             email: email,
             password: password
         });
@@ -77,7 +92,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
         window.location.href = "chat.html"; // Redireciona para o chat após registro
     } catch (error) {
         console.error("Erro ao criar conta:", error);
-        alert('Erro ao criar conta.');
+        alert('Erro ao criar conta. Tente novamente mais tarde.');
     }
 });
 
@@ -87,25 +102,24 @@ document.getElementById("googleBtnLogin").addEventListener("click", async (e) =>
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        
+
+        if (!user.emailVerified) {
+            alert("E-mail não verificado. Verifique sua conta do Google antes de continuar.");
+            return;
+        }
+
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             alert("Usuário não encontrado no Firestore. Criando usuário...");
-            // Adiciona o usuário ao Firestore
             await addDoc(collection(db, "users"), {
-                username: user.displayName, // Nome do usuário do Google
+                username: user.displayName,
                 email: user.email
-            });
-        } else {
-            querySnapshot.forEach((doc) => {
-                console.log("Usuário encontrado:", doc.data());
             });
         }
 
-        // Redireciona para o chat após login
         window.location.href = "chat.html";
     } catch (error) {
         console.error("Erro ao fazer login com Google:", error);
@@ -120,19 +134,23 @@ document.getElementById("googleBtnRegister").addEventListener("click", async (e)
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
-        // Adicionando o usuário ao Firestore (caso ainda não exista)
+        if (!user.emailVerified) {
+            alert("E-mail não verificado. Por favor, verifique seu e-mail do Google.");
+            return;
+        }
+
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             await addDoc(collection(db, "users"), {
-                username: user.displayName, // Nome do usuário do Google
+                username: user.displayName,
                 email: user.email
             });
 
             alert("Usuário registrado com sucesso com Google!");
-            window.location.href = "chat.html"; // Redireciona para o chat após registro
+            window.location.href = "chat.html";
         } else {
             alert("Usuário já cadastrado com esse e-mail!");
         }
@@ -141,24 +159,3 @@ document.getElementById("googleBtnRegister").addEventListener("click", async (e)
         alert("Erro ao criar conta com Google.");
     }
 });
-
-// Função para solicitar o e-mail ao usuário e enviar o link de redefinição de senha
-function forgotPassword() {
-    const email = window.prompt("Digite seu e-mail para redefinir a senha:");
-
-    if (email) {
-        const auth = getAuth();
-        sendPasswordResetEmail(auth, email)
-            .then(() => {
-                alert("Um link para redefinir sua senha foi enviado para o seu e-mail.");
-            })
-            .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                console.error('Erro ao enviar o link:', errorMessage);
-                alert("Houve um erro ao tentar enviar o e-mail de redefinição. Verifique o e-mail e tente novamente.");
-            });
-    } else {
-        alert("Por favor, insira um e-mail válido.");
-    }
-  }
